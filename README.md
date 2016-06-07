@@ -1,2 +1,2 @@
 # tt-homework
-homework for type theory course
+Homework for type theory course ITMO.
