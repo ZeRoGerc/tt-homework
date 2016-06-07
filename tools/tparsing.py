@@ -88,7 +88,7 @@ class BaseParser:
         Parse single application starting from given position of self.raw_string
 
         :param index: index of self.raw_string to start parsing from
-        :return: parsed applique
+        :return: tuple(length of parsed symbols(including whitespaces), parsed applique)
         """
         id = index
         answer = []
@@ -113,7 +113,7 @@ class BaseParser:
         Parse single application starting from given position of self.raw_string
 
         :param index: index of self.raw_string to start parsing from
-        :return: parsed abstraction
+        :return: tuple(length of parsed symbols(including whitespaces), parsed abstraction)
         """
         id = self.__trim__(index)
 
@@ -131,7 +131,7 @@ class BaseParser:
         Parse string stored in self.raw_string.
 
         :param index: index of self.raw_string to start parsing from
-        :return: parsed expression
+        :return: tuple(length of parsed symbols(including whitespaces), parsed expression)
         """
         id = self.__trim__(index)
 
@@ -167,7 +167,7 @@ def test():
         if additional is not None:
             print(additional)
 
-        print("Ensure parser will not crash on string '{0}'".format(raw))
+        print("Ensuring parser will not crash on string '{0}'".format(raw))
         print("Result of work is: '{0}'".format(parser_.parse(raw)))
         print("Passed\n")
 
