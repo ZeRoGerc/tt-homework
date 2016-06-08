@@ -23,32 +23,57 @@ def get_free_vars(exp: Expression) -> set:
         raise Exception("Unknown type of" + str(exp))
 
 
-def substitution(exp: Expression, var_name: str, sub: Expression) -> Expression:
+def __subst__(exp: Expression, var_name: str, sub: Expression, free_vars: set, allowed: bool):
     """
-    Replace all free entries of given variable in exp with sub
+    Replace all free entries of given variable in exp with sub.
+    Throws VariableNotFreeException if variable is not free for substitution.
 
     :param exp: expression to replace variable in
     :param var_name: given variable
     :param sub: expression to substitute in place of all free entries of given variable
-    :return: substituted expression
+    :param free_vars: set of all free variables os sub
+    :param allowed: true is substitution allowed
+    :return:
     """
     if isinstance(exp, Var):
         if exp.name == var_name:
-            return sub
+            if allowed:
+                return sub
+            else:
+                raise VariableIsNotFreeError(var_name + " not free")
         else:
             return exp
     elif isinstance(exp, Abstraction):
         if (exp.variable.name == var_name):
             return exp
         else:
-            return Abstraction(exp.variable, substitution(exp.expression, var_name, sub))
+            if exp.variable.name in free_vars:
+                allowed_ = False
+            else:
+                allowed_ = allowed
+
+            return Abstraction(exp.variable, __subst__(exp.expression, var_name, sub, free_vars, allowed_))
     elif isinstance(exp, Applique):
         return Applique(
-                substitution(exp.left, var_name, sub),
-                substitution(exp.right, var_name, sub)
+                __subst__(exp.left, var_name, sub, free_vars, allowed),
+                __subst__(exp.right, var_name, sub, free_vars, allowed)
         )
     else:
         raise Exception("Unknown type of" + str(exp))
+
+
+def substitution(exp: Expression, var_name: str, sub: Expression, ) -> Expression:
+    """
+    Replace all free entries of given variable in exp with sub.
+    Throws VariableNotFreeException if variable is not free for substitution.
+
+    :param exp: expression to replace variable in
+    :param var_name: given variable
+    :param sub: expression to substitute in place of all free entries of given variable
+    :return: substituted expression
+    """
+    free_vars = get_free_vars(sub)
+    return __subst__(exp, var_name, sub, free_vars, True)
 
 
 def test():
@@ -63,6 +88,17 @@ def test():
         ))
         assert substitution(exp, var_name, sub) == result
         print("Passed\n")
+
+    def test_if_exception_raised_sub(exp: Expression, var_name: str, sub: Expression):
+        print(
+                "Testing substitution of variable '{0}' to '{1}' in expression '{2}': Variable is not free expecting".format(
+                        var_name, sub, exp
+                ))
+        try:
+            substitution(exp, var_name, sub)
+            assert False
+        except VariableIsNotFreeError:
+            print("Passed\n")
 
     print("!!!Testing free variables...\n")
     parser_ = BaseParser()
@@ -81,6 +117,13 @@ def test():
     test_equality_of_sub(parser_.parse("x x a \\x.a b c"),
                          "x", parser_.parse("a b"),
                          parser_.parse("(a b) (a b) a\\x.a b c"))
+
+    test_if_exception_raised_sub(parser_.parse("x x a \\a.a x c"),
+                                 "x", parser_.parse("a b"))
+
+    test_equality_of_sub(parser_.parse("a b c x (\\x.x)"),
+                         "x", parser_.parse("\\x.x"),
+                         parser_.parse("a b c (\\x.x) (\\x.x)"))
 
 if __name__ == "__main__":
     test()

@@ -2,7 +2,13 @@ import getopt
 import os
 import sys
 
-from tools.tparsing import *
+from tools.tparsing import BaseParser
+
+
+def solve(input_file, output_file):
+    parser_ = BaseParser()
+    result = parser_.parse(input_file.readline())
+    output_file.write(str(result))
 
 
 def main(argv):
@@ -28,9 +34,7 @@ def main(argv):
     input_ = open(os.path.join(script_path, input_file), "r")
     output_ = open(os.path.join(script_path, output_file), "w")
 
-    parser_ = BaseParser()
-    result = parser_.parse(input_.readline())
-    output_.write(str(result))
+    solve(input_, output_)
 
 
 if __name__ == "__main__":

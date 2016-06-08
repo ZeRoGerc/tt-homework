@@ -6,6 +6,14 @@ from tools.tparsing import BaseParser
 from tools.utils import get_free_vars
 
 
+def solve(input_file, output_file):
+    parser_ = BaseParser()
+    exp = parser_.parse(input_file.readline())
+
+    for var in sorted(get_free_vars(exp)):
+        output_file.write(var + "\n")
+
+
 def main(argv):
     input_file = 'test2.in'
     output_file = 'test2.out'
@@ -29,11 +37,7 @@ def main(argv):
     input_ = open(os.path.join(script_path, input_file), "r")
     output_ = open(os.path.join(script_path, output_file), "w")
 
-    parser_ = BaseParser()
-    exp = parser_.parse(input_.readline())
-
-    for var in sorted(get_free_vars(exp)):
-        output_.write(var + "\n")
+    solve(input_, output_)
 
 
 if __name__ == "__main__":
