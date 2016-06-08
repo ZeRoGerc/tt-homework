@@ -30,13 +30,13 @@ def solve(input_file, output_file):
 
 
 def main(argv):
-    input_file = 'tes.in'
-    output_file = 'tes.out'
+    input_file = 'test3.in'
+    output_file = 'test3.out'
 
     try:
         opts, args = getopt.getopt(argv, "hi:o:", ["input_file=", "output_file="])
     except getopt.GetoptError:
-        print("first.py -i <input_file> -o <output_file>")
+        print("third.py -i <input_file> -o <output_file>")
         sys.exit(2)
 
     for opt, arg in opts:

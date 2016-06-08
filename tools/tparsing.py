@@ -3,6 +3,7 @@
 """
 from tools.terrors import *
 from tools.tstructure import *
+from tools.types import *
 
 
 class BaseParser:
@@ -192,38 +193,29 @@ def test():
 
     print("!!!Testing standard functions...\n")
 
-    type_true = "(\\x.\\y.x)"
     test_stability(type_true, "True")
 
-    type_false = "(\\x.\\y.y)"
     test_stability(type_false, "False")
 
-    type_not = ("(\\a.a {0} {1})".format(type_false, type_true))
     test_stability(type_not, "Not")
 
-    type_zero = "(\\f.\\x.x)"
-    test_stability(type_zero, "Zero")
+    test_stability(numbers[0], "Zero")
 
-    type_one = "(\\f.\\x.f x)"
-    test_stability(type_one, "One")
+    test_stability(numbers[1], "One")
 
-    type_is_zero = "(\\n.n (\\x.{0}) {1})".format(type_false, type_true)
     test_stability(type_is_zero, "isZero")
 
-    type_is_even = "(\\n.n {0} {1})".format(type_not, type_true)
-    test_stability(type_is_even)
+    test_stability(type_is_even, "isEven")
 
-    type_add = "(\\a.\\b.\\f.\\x.a f (b f x))"
     test_stability(type_add, "Add")
 
-    type_mul = "(\\a.\\b.a ({0} b) {1})".format(type_add, type_zero)
     test_stability(type_mul, "Mul")
 
-    type_pow = "\\a.\\b.b ({0} a) {1}".format(type_mul, type_one)
     test_stability(type_pow, "Pow")
 
-    type_pow2 = "\\a.\\b.b a"
     test_stability(type_pow2, "Pow'")
+
+    test_stability(type_minus, "Minus")
 
 
 if __name__ == "__main__":
