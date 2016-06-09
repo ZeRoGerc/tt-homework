@@ -117,32 +117,12 @@ def reduction(exp: Expression) -> Expression:
     :param exp: given Expression
     :return: normalized form of given expression
     """
-    expression = rename(exp)
+    expression = rename_all_abstractions(exp)
     temp = __reduction__(expression)
     while temp[0]:
         temp = __reduction__(temp[1])
 
-    # noinspection PyTypeChecker
-    def grammar_rename(exp: Expression) -> Expression:
-        """
-        Rename variables in given expression so that they satisfy grammar
-
-        :param exp: given expression
-        :param var: last used variable
-        :param renamed: renamed variables
-        :return: renamed expression
-        """
-        if isinstance(exp, Var):
-            if exp.name[0].isdigit():
-                return Var("t" + exp.name)
-            else:
-                return exp
-        elif isinstance(exp, Abstraction):
-            return Abstraction(grammar_rename(exp.variable), grammar_rename(exp.expression))
-        elif isinstance(exp, Applique):
-            return Applique(grammar_rename(exp.left), grammar_rename(exp.right))
-
-    return grammar_rename(rename(temp[1]))
+    return rename_all_abstractions(temp[1])
 
 
 def __rename__(exp: Expression, last_var: int = 0) -> (int, Expression):
@@ -171,14 +151,36 @@ def __rename__(exp: Expression, last_var: int = 0) -> (int, Expression):
         return right[0], Applique(left[1], right[1])
 
 
-def rename(exp: Expression) -> Expression:
+# noinspection PyTypeChecker
+def __grammar_rename__(exp: Expression) -> Expression:
+    """
+    Rename variables in given expression so that they satisfy grammar
+
+    :param exp: given expression
+    :param var: last used variable
+    :param renamed: renamed variables
+    :return: renamed expression
+    """
+    if isinstance(exp, Var):
+        if exp.name[0].isdigit():
+            return Var("t" + exp.name)
+        else:
+            return exp
+    elif isinstance(exp, Abstraction):
+        return Abstraction(__grammar_rename__(exp.variable), __grammar_rename__(exp.expression))
+    elif isinstance(exp, Applique):
+        return Applique(__grammar_rename__(exp.left), __grammar_rename__(exp.right))
+
+
+def rename_all_abstractions(exp: Expression) -> Expression:
     """
     Rename all variables in given Expression, so that all Abstractions have different variables.
+    Renamed variables get such names: t1, t2, t3 ...
 
     :param exp: given expression
     :return: renamed expression
     """
-    return __rename__(exp)[1]
+    return __grammar_rename__(__rename__(exp)[1])
 
 
 def test_free_vars():
@@ -241,7 +243,7 @@ def test_renaming():
 
     def test_renaming(exp: Expression, result: Expression):
         print("Test renaming of '{0}': result must be '{1}'".format(exp, result))
-        temp = rename(exp)
+        temp = rename_all_abstractions(exp)
         print("Result is '{0}'".format(temp))
         assert temp == result
         print("Passed")
@@ -251,23 +253,23 @@ def test_renaming():
     test_renaming(
             parser_.parse("\\x.\\x.\\x.x"),
             Abstraction(
-                    Var("1"),
+                    Var("t1"),
                     Abstraction(
-                            Var("2"),
-                            Abstraction(Var("3"), Var("3"))
+                            Var("t2"),
+                            Abstraction(Var("t3"), Var("t3"))
                     )
             ))
 
     test_renaming(
             parser_.parse("\\x.\\x.\\x.x a"),
             Abstraction(
-                    Var("1"),
+                    Var("t1"),
                     Abstraction(
-                            Var("2"),
+                            Var("t2"),
                             Abstraction(
-                                    Var("3"),
+                                    Var("t3"),
                                     Applique(
-                                            Var("3"),
+                                            Var("t3"),
                                             Var("a")
                                     )
                             )
@@ -279,8 +281,8 @@ def test_renaming():
             Applique(
                     Applique(
                             Abstraction(
-                                    Var("1"),
-                                    Var("1")
+                                    Var("t1"),
+                                    Var("t1")
                             ),
                             Var("x")
                     ),
@@ -297,8 +299,8 @@ def alpha_eq(exp1: Expression, exp2: Expression) -> bool:
     :param exp2: second expression
     :return: True is equal False other wise
     """
-    first = rename(exp1)
-    second = rename(exp2)
+    first = rename_all_abstractions(exp1)
+    second = rename_all_abstractions(exp2)
     return first == second
 
 

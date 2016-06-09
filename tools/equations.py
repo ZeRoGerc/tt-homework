@@ -54,22 +54,6 @@ def __subst__(exp: TType, x: TVar, sub: TType) -> TType:
         return TImpl(__subst__(exp.left, x, sub), __subst__(exp.right, x, sub))
 
 
-def __apply_system__(exp: TType, equations: list) -> TType:
-    """
-    Apply given set of equations to given expression.
-    This function assume that all equations is in the form x=T
-
-    :param exp: given expression
-    :param equations: given set of equation
-    :return: resulting type
-    """
-    for equation in equations:
-        if isinstance(equation.left, TVar):
-            exp = __subst__(exp, equation.left, equation.right)
-
-    return exp
-
-
 def __apply_first__(equations: list) -> (bool, list):
     """
     Apply first type of transformation to the set of equations.
@@ -99,6 +83,9 @@ def __apply_second__(equations: list) -> (bool, list):
 
     result = []
     for equation in equations:
+        if isinstance(equation.left, TVar) and equation.left.name in __get_vars__(equation.right):
+            raise InconsistentSystemError("equation of type x=T and x in T")
+
         if equation.left != equation.right:
             result.append(equation)
 
@@ -108,24 +95,41 @@ def __apply_second__(equations: list) -> (bool, list):
 def __apply_third__(equations: list) -> (bool, list):
     """
     Apply third type of transformation to the set of equations.
-    Third type is x=T and S=R where (x in S or x in R)
+    Third type is A->B=C->D -> A=C, B=D
 
-    :param equations:
-    :return:
+    :param equations: given list
+    :return: tuple(True if at least one transformation applied, transformed set of equations)
     """
-    vars = []
+    result = []
     for equation in equations:
-        vars.append((__get_vars__(equation.left), __get_vars__(equation.right)))
+        if isinstance(equation.left, TImpl) and isinstance(equation.right, TImpl):
+            result.append(Equation(equation.left.left, equation.right.left))
+            result.append(Equation(equation.left.right, equation.right.right))
+        else:
+            result.append(equation)
 
+    return len(result) != len(equations), result
+
+
+def __apply_fourth__(equations: list) -> (bool, list):
+    """
+    Apply fourth type of transformation to the set of equations.
+    Fourth type is x=T and S=R where (x in S or x in R)
+
+    :param equations: given list
+    :return: tuple(True if at least one transformation applied, transformed set of equations)
+    """
     applied = False
     for i in range(len(equations)):
+        vars = []
+        for equation in equations:
+            vars.append((__get_vars__(equation.left), __get_vars__(equation.right)))
+
         if isinstance(equations[i].left, TVar):
             x = equations[i].left
             for j in range(len(equations)):
                 if i != j:
                     if (x.name in vars[j][0]) or (x.name in vars[j][1]):
-                        if x.name in vars[i][1]:
-                            raise InconsistentSystemError("equation of type x=T and x in T")
                         applied = True
                         equations[j] = Equation(
                                 __subst__(equations[j].left, x, equations[i].right),
@@ -151,7 +155,26 @@ def solve_set_of_equations(equations: list) -> list:
         z, temp_eq = __apply_third__(temp_eq)
         temp_bool |= z
 
+        z, temp_eq = __apply_fourth__(temp_eq)
+        temp_bool |= z
+
     return temp_eq
+
+
+def apply_system(exp: TType, equations: list) -> TType:
+    """
+    Apply given set of equations to given expression.
+    This function assume that all equations is in the form x=T
+
+    :param exp: given expression
+    :param equations: given set of equation
+    :return: resulting type
+    """
+    for equation in equations:
+        if isinstance(equation.left, TVar):
+            exp = __subst__(exp, equation.left, equation.right)
+
+    return exp
 
 
 def test():
@@ -192,7 +215,7 @@ def test():
     eq6 = Equation(t1, I(t3, e0))
 
     set1 = [eq1, eq2, eq3, eq4, eq5, eq6]
-    print(str(__apply_system__(I(t0, I(t1, e5)), solve_set_of_equations(set1))))
+    print(str(apply_system(I(t0, I(t1, e5)), solve_set_of_equations(set1))))
 
     # TODO parser and tests
 
