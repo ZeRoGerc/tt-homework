@@ -31,6 +31,12 @@ def __get_type__(exp: Expression, last_var: int) -> (int, list, TType):
 
 
 def get_type(exp: Expression) -> TType:
+    """
+    Get type of given expression
+
+    :param exp: given expression
+    :return: resulting type
+    """
     temp = __get_type__(rename_all_abstractions(exp), 0)
     try:
         eq_set = solve_set_of_equations(temp[1])
