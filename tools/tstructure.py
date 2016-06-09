@@ -40,7 +40,7 @@ class Applique(Expression):
         self.right = right
 
     def __hash__(self):
-        return hash(self.left) ^ hash(self.right) ^ hash((self.left, self.right))
+        return hash(self.left) ^ hash(self.right) ^ hash(self.__dict__)
 
     @staticmethod
     def __wrap__(exp: Expression):
@@ -57,13 +57,56 @@ class Abstraction(Expression):
     """
         Expression of type x\.X
     """
-
     def __init__(self, variable: Var, expression: Expression):
         self.variable = variable
         self.expression = expression
 
     def __hash__(self):
-        return hash(self.variable) ^ hash(self.expression) ^ hash((self.variable, self.expression))
+        return hash(self.variable) ^ hash(self.expression) ^ hash(self.__dict__)
 
     def __str__(self):
         return "(\\" + str(self.variable) + "." + str(self.expression) + ")"
+
+
+class TType:
+    """
+    Base class for all types
+    """
+
+    def __eq__(self, other):
+        return (isinstance(other, self.__class__)
+                and self.__dict__ == other.__dict__)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+
+class TVar(TType):
+    """
+    Atomic unit of all TTypes
+    """
+
+    def __init__(self, name: str):
+        self.name = name
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __str__(self):
+        return self.name
+
+
+class TImpl(TType):
+    """
+    Implication for TType forming.
+    """
+
+    def __init__(self, left: TType, right: TType):
+        self.left = left
+        self.right = right
+
+    def __hash__(self):
+        return hash(self.left) ^ hash(self.right) ^ hash(self.__dict__)
+
+    def __str__(self):
+        return "(" + str(self.left) + "->" + str(self.right) + ")"

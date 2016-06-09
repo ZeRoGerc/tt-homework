@@ -341,13 +341,34 @@ def test_reduction():
             parser_.parse(numbers[10])
     )
 
+    print("!!!Testing power...\n")
+
+    test_reduction(
+            parser_.parse(type_pow + " {0} {1}".format(numbers[10], numbers[0])),
+            parser_.parse(numbers[1])
+    )
+
+    test_reduction(
+            parser_.parse(type_pow + " {0} {1}".format(numbers[0], numbers[20])),
+            parser_.parse(numbers[0])
+    )
+
+    test_reduction(
+            parser_.parse(type_pow + " {0} {1}".format(numbers[10], numbers[1])),
+            parser_.parse(numbers[10])
+    )
+
+    test_reduction(
+            parser_.parse(type_pow + " {0} {1}".format(numbers[3], numbers[3])),
+            parser_.parse(numbers[27])
+    )
+
     print("!!!Testing power2...\n")
 
     test_reduction(
             parser_.parse(type_pow2 + " {0} {1}".format(numbers[3], numbers[3])),
             parser_.parse(numbers[27])
     )
-
 
 
 def test():
