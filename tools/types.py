@@ -23,3 +23,8 @@ type_pow2 = "(\\a.\\b.b a)"
 
 type_minus = "(\\a.\\b.b (\\n.n (\\p.\\f.f (p (\\a.\\b.b)) \\f.\\x.f (p (\\a.\\b.b) f x)) " \
              "(\\f.f (\\f.\\x.x) \\f.\\x.x) \\a.\\b.a) a)"
+type_S = "(\\x.\\y.\\z.x z (y z))"
+
+type_K = "(\\x.\\y.x)"
+
+type_I = "(\\x.x)"

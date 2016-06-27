@@ -68,6 +68,24 @@ class Abstraction(Expression):
         return "(\\" + str(self.variable) + "." + str(self.expression) + ")"
 
 
+class Let(Expression):
+    """
+        let = expr in expr.
+        For extended grammar
+    """
+
+    def __init__(self, variable: Var, subst: Expression, expression: Expression):
+        self.variable = variable
+        self.subst = subst
+        self.expression = expression
+
+    def __hash__(self):
+        return hash(self.variable) ^ hash(self.subst) ^ hash(self.expression) ^ hash(self.__dict__)
+
+    def __str__(self):
+        return "(let " + str(self.variable) + "=" + str(self.subst) + " in " + str(self.expression) + ")"
+
+
 class TType:
     """
     Base class for all types

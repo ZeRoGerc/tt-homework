@@ -127,9 +127,10 @@ class BaseParser:
             exp = self.parse_expression(id)
             return id + exp[0] - index, Abstraction(variable_[1], exp[1])
 
+
     def parse_expression(self, index: int) -> (int, Expression):
         """
-        Parse string stored in self.raw_string.
+        Parse string stored in self.raw_string. (expression may include "let")
 
         :param index: index of self.raw_string to start parsing from
         :return: tuple(length of parsed symbols(including whitespaces), parsed expression)
@@ -139,7 +140,29 @@ class BaseParser:
         if id >= len(self.raw_string):
             raise self.__invalid_expression_error__(id)
 
-        if self.raw_string[id] != '\\':
+        if id + 3 <= len(self.raw_string) and self.raw_string[id:id + 3] == "let":
+            # This is let
+            id += 3
+            parsed, var = self.parse_variable(id)
+            id = self.__trim__(id + parsed)
+
+            if not (id < len(self.raw_string) and self.raw_string[id] == "="):
+                raise self.__invalid_expression_error__(id)
+            id += 1
+            in_id = self.raw_string.find("in", id)
+            if in_id == -1:
+                raise self.__invalid_expression_error__(id)
+            buf = self.raw_string
+            self.raw_string = self.raw_string[:in_id]
+            parsed, sub = self.parse_expression(id)
+
+            self.raw_string = buf
+            id = in_id + 2
+            parsed, exp = self.parse_expression(id)
+            id += parsed
+            return id - index, Let(var, sub, exp)
+
+        elif self.raw_string[id] != '\\':
             #  When application must be first
             temp = self.parse_applique(id)
             id = self.__trim__(id + temp[0])
@@ -190,6 +213,8 @@ def test():
     test_stability("\\a.\\b.  a (  b)  c")
     test_stability("\\ a  . \\b  .   (a  b)  c     (  \\ d . e   \\ f .  g )   (((h)))")
     test_stability("\\ a  . \\b  .   ( (   ( a  ) )   ) (  b )  c     (  \\ d . e   \\ f .  g )   h")
+    test_stability("let a=(\\a.(a b)) in (a a b)")
+    test_stability("let a=(\\a.(a b)) in (let a=a in b)")
 
     print("!!!Testing standard functions...\n")
 

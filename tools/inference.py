@@ -98,6 +98,7 @@ def test():
     t = TVar("t")
 
     x = Var("x")
+    y = Var("y")
     f = Var("f")
 
     e1 = Abstraction(x, Applique(x, x))
@@ -114,6 +115,9 @@ def test():
             ))
     test_if_same(e2, TImpl(TImpl(t, t), TImpl(t, t)))
 
+    e3 = Abstraction(x, Applique(x, y))
+    result = get_type(e3)
+    pass
 
 if __name__ == "__main__":
     test()

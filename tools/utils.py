@@ -366,17 +366,22 @@ def test_reduction():
     )
 
     print("!!!Testing power2...\n")
-
     test_reduction(
             parser_.parse(type_pow2 + " {0} {1}".format(numbers[3], numbers[3])),
             parser_.parse(numbers[27])
     )
 
+    exp = "( {0}({0}({1}{0})({0}({1}{1}){2}))({0}({0}({1} {0}) {2})({1}{2})) )".format(type_S, type_K, type_I)
+    test_reduction(
+            parser_.parse(exp),
+            parser_.parse(numbers[2])
+    )
+
 
 def test():
-    test_free_vars()
-    test_sub()
-    test_renaming()
+    # test_free_vars()
+    # test_sub()
+    # test_renaming()
     test_reduction()
 
 
