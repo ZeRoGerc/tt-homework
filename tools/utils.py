@@ -135,9 +135,10 @@ def __rename__(exp: Expression, last_var: int = 0) -> (int, Expression):
     """
 
     if isinstance(exp, Var):
-        return last_var, exp
+        # TODO rename to  "t" + exp.name in release version
+        return last_var, Var(exp.name)
     elif isinstance(exp, Abstraction):
-        new_var = Var(str(last_var + 1))
+        new_var = Var("t" + str(last_var + 1))
         result = __rename__(
                 substitution(exp.expression, exp.variable.name, new_var),
                 last_var + 1
@@ -150,6 +151,11 @@ def __rename__(exp: Expression, last_var: int = 0) -> (int, Expression):
 
         return right[0], Applique(left[1], right[1])
 
+    elif isinstance(exp, Let):
+        last, first = __rename__(exp.subst, last_var)
+        last, second = __rename__(exp.expression, last)
+        return last, Let(Var(exp.variable.name), first, second)
+
 
 # noinspection PyTypeChecker
 def __grammar_rename__(exp: Expression) -> Expression:
@@ -157,8 +163,6 @@ def __grammar_rename__(exp: Expression) -> Expression:
     Rename variables in given expression so that they satisfy grammar
 
     :param exp: given expression
-    :param var: last used variable
-    :param renamed: renamed variables
     :return: renamed expression
     """
     if isinstance(exp, Var):
@@ -170,6 +174,8 @@ def __grammar_rename__(exp: Expression) -> Expression:
         return Abstraction(__grammar_rename__(exp.variable), __grammar_rename__(exp.expression))
     elif isinstance(exp, Applique):
         return Applique(__grammar_rename__(exp.left), __grammar_rename__(exp.right))
+    elif isinstance(exp, Let):
+        return Let(exp.variable, exp.subst, __grammar_rename__(exp.expression))
 
 
 def rename_all_abstractions(exp: Expression) -> Expression:
@@ -369,12 +375,6 @@ def test_reduction():
     test_reduction(
             parser_.parse(type_pow2 + " {0} {1}".format(numbers[3], numbers[3])),
             parser_.parse(numbers[27])
-    )
-
-    exp = "( {0}({0}({1}{0})({0}({1}{1}){2}))({0}({0}({1} {0}) {2})({1}{2})) )".format(type_S, type_K, type_I)
-    test_reduction(
-            parser_.parse(exp),
-            parser_.parse(numbers[2])
     )
 
 

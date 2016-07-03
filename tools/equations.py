@@ -32,11 +32,14 @@ def __get_vars__(exp: TType) -> set:
         return {exp.name}
     elif isinstance(exp, TImpl):
         return __get_vars__(exp.left).union(__get_vars__(exp.right))
+    elif isinstance(exp, TSigma):
+        # TODO: check
+        return __get_vars__(exp.type)
     else:
         raise Exception("get_vars exception: No such type {0}".format(exp))
 
 
-def __subst__(exp: TType, x: TVar, sub: TType) -> TType:
+def subst(exp: TType, x: TVar, sub: TType) -> TType:
     """
     Substitute given variable in given expression on given substitution.
 
@@ -51,7 +54,12 @@ def __subst__(exp: TType, x: TVar, sub: TType) -> TType:
         else:
             return exp
     elif isinstance(exp, TImpl):
-        return TImpl(__subst__(exp.left, x, sub), __subst__(exp.right, x, sub))
+        return TImpl(subst(exp.left, x, sub), subst(exp.right, x, sub))
+    elif isinstance(exp, TUni):
+        if exp.var == x:
+            return exp
+        else:
+            return TUni(exp.var, subst(exp.expression, x, sub))
 
 
 def __apply_first__(equations: list) -> (bool, list):
@@ -132,8 +140,8 @@ def __apply_fourth__(equations: list) -> (bool, list):
                     if (x.name in vars[j][0]) or (x.name in vars[j][1]):
                         applied = True
                         equations[j] = Equation(
-                                __subst__(equations[j].left, x, equations[i].right),
-                                __subst__(equations[j].right, x, equations[i].right)
+                                subst(equations[j].left, x, equations[i].right),
+                                subst(equations[j].right, x, equations[i].right)
                         )
 
     return applied, equations
@@ -172,7 +180,7 @@ def apply_system(exp: TType, equations: list) -> TType:
     """
     for equation in equations:
         if isinstance(equation.left, TVar):
-            exp = __subst__(exp, equation.left, equation.right)
+            exp = subst(exp, equation.left, equation.right)
 
     return exp
 
