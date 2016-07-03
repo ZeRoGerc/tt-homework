@@ -3,14 +3,28 @@ import os
 import sys
 
 from tools.tparsing import BaseParser
-from tools.utils import reduction
+from tools.constraints import *
+from tools.tstructure import TVar
 
 
 def solve(input_file, output_file):
+    infer = ConstraintResolver()
     parser_ = BaseParser()
-    exp = parser_.parse(input_file.readline())
-    output_file.write(str(reduction(exp)))
+    temp = input_file.readline()
 
+    exp = parser_.parse(temp)
+    result_type = TVar("result")
+    constraint = infer.generate_constraint(exp, result_type)
+
+    output_file.write(str(infer.resolve(constraint, result_type)) + "\n")
+
+    for eq in set(infer.inst):
+        if eq.left in infer.variable_map:
+            del infer.variable_map[eq.left]
+        output_file.write(str(eq.left) + " : " + str(eq.right) + "\n")
+
+    for eq in infer.variable_map.keys():
+        output_file.write(str(eq) + " : " + str(infer.variable_map[eq]) + "\n")
 
 def main(argv):
     input_file = 'task5.in'

@@ -234,6 +234,7 @@ class TSigma(TType):
         self.vars = vars
         self.constraint = constraint
         self.type = type
+        self.subst = None
 
     def __hash__(self):
         return hash(tuple(self.vars)) ^ hash(self.constraint) ^ hash(self.type)

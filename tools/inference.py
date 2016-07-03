@@ -1,48 +1,77 @@
 from tools.equations import Equation, solve_set_of_equations, apply_system
 from tools.terrors import InconsistentSystemError
 from tools.tstructure import *
-from tools.utils import rename_all_abstractions
+from tools.utils import rename_all_abstractions, get_free_vars
 
 
-def __get_type__(exp: Expression, last_var: int) -> (int, list, TType):
-    """
-    Get list of equations and type corresponding to given expression.
-    Assumed that all variables is already renamed.
+class ClassicInferer:
+    def __init__(self):
+        self.defined_vars = {}
 
-    :param exp: given expression
-    :param last_var: next free variable
-    :return: tuple(next free variable, list of equations, type)
-    """
-    if isinstance(exp, Var):
-        return last_var, [], TVar("t" + exp.name)
-    elif isinstance(exp, Abstraction):
-        temp = __get_type__(exp.expression, last_var)
-        return last_var, temp[1], TImpl(TVar("t" + exp.variable.name), temp[2])
-    elif isinstance(exp, Applique):
-        left = __get_type__(exp.left, last_var)
-        right = __get_type__(exp.right, left[0])
-        new_var = TVar("t" + str(right[0]))
+    def __get_type__(self, exp: Expression, last_var: int) -> (int, list, TType):
+        """
+        Get list of equations and type corresponding to given expression.
+        Assumed that all variables is already renamed.
 
-        result_list = left[1] + right[1]
-        result_list.append(Equation(left[2], TImpl(right[2], new_var)))
-        return right[0] + 1, result_list, new_var
-    else:
-        raise Exception("Unknown type of" + str(exp))
+        :param exp: given expression
+        :param last_var: next free variable
+        :return: tuple(next free variable, list of equations, type)
+        """
+        if isinstance(exp, Var):
+            self.defined_vars[exp] = TVar("t" + exp.name)
+            return last_var, [], TVar("t" + exp.name)
+        elif isinstance(exp, Abstraction):
+            resort = None
+            if exp.variable in self.defined_vars:
+                resort = self.defined_vars[exp.variable]
 
+            temp = self.__get_type__(exp.expression, last_var)
 
-def get_type(exp: Expression) -> TType:
-    """
-    Get type of given expression
+            if resort is None:
+                if exp.variable in self.defined_vars:
+                    del self.defined_vars[exp.variable]
+            else:
+                self.defined_vars[exp.variable] = resort
 
-    :param exp: given expression
-    :return: resulting type
-    """
-    temp = __get_type__(rename_all_abstractions(exp), 0)
-    try:
-        eq_set = solve_set_of_equations(temp[1])
-        return apply_system(temp[2], eq_set)
-    except InconsistentSystemError:
-        return None
+            return last_var, temp[1], TImpl(TVar("t" + exp.variable.name), temp[2])
+        elif isinstance(exp, Applique):
+            left = self.__get_type__(exp.left, last_var)
+            right = self.__get_type__(exp.right, left[0])
+            new_var = TVar("t" + str(right[0]))
+
+            result_list = left[1] + right[1]
+            result_list.append(Equation(left[2], TImpl(right[2], new_var)))
+            return right[0] + 1, result_list, new_var
+        else:
+            raise Exception("Unknown type of" + str(exp))
+
+    def get_type(self, exp: Expression) -> TType:
+        """
+        Get type of given expression
+
+        :param exp: given expression
+        :return: tuple(context, resulting type)
+        """
+        temp = self.__get_type__(rename_all_abstractions(exp), 0)
+        try:
+            eq_set = solve_set_of_equations(temp[1])
+            for var in self.defined_vars:
+                self.defined_vars[var] = apply_system(self.defined_vars[var], eq_set)
+            return apply_system(temp[2], eq_set)
+        except InconsistentSystemError:
+            return None
+
+    def get_type_with_context(self, exp: Expression) -> (dict, TType):
+        """
+        Get type of given expression and context of defined variables
+        """
+        self.defined_vars = {}
+        # free_vars = get_free_vars(exp)
+        # context = {}
+        # for var in free_vars:
+        #     context[var] = self.defined_vars[var]
+        #
+        return self.defined_vars, self.get_type(exp)
 
 
 def __rename__(exp: TType, last_var: int, used: dict) -> (TType, int, dict):
@@ -83,14 +112,14 @@ def __is_eq__(exp1: TType, exp2: TType) -> bool:
 def test():
     def test_if_none(exp: Expression):
         print("Testing expression '{0}': expression cannot have a type".format(exp))
-        res = get_type(exp)
+        res = ClassicInferer().get_type(exp)
         print("Result is {0}".format(res))
         assert res is None
         print("Passed\n")
 
     def test_if_same(exp: Expression, result: TType):
         print("Testing expression '{0}': expression must have type '{1}'".format(exp, result))
-        res = get_type(exp)
+        res = ClassicInferer().get_type(exp)
         print("Result is {0}".format(res))
         assert __is_eq__(res, result)
         print("Passed\n")
@@ -116,8 +145,6 @@ def test():
     test_if_same(e2, TImpl(TImpl(t, t), TImpl(t, t)))
 
     e3 = Abstraction(x, Applique(x, y))
-    result = get_type(e3)
-    pass
 
 if __name__ == "__main__":
     test()

@@ -13,8 +13,8 @@ def solve(input_file, output_file):
 
 
 def main(argv):
-    input_file = 'task5.in'
-    output_file = 'task5.out'
+    input_file = 'task1.in'
+    output_file = 'task1.out'
 
     try:
         opts, args = getopt.getopt(argv, "hi:o:", ["input_file=", "output_file="])
@@ -24,7 +24,7 @@ def main(argv):
 
     for opt, arg in opts:
         if opt == "-h":
-            print("fifth.py -i <input_file> -o <output_file>")
+            print("first.py -i <input_file> -o <output_file>")
             sys.exit()
         elif opt in ("-i", "-input_file"):
             input_file = arg

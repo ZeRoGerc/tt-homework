@@ -3,11 +3,19 @@ from tools.equations import *
 import time
 
 
+def copy(defined: list) -> list:
+    result = []
+    for type in defined:
+        result.append(type)
+    return result
+
+
 class ConstraintResolver:
 
     def __init__(self):
         self.last_number = 0
         self.variable_map = {}
+        self.inst = []
 
     def generate_constraint(self, exp: Expression, t: TType) -> Constraint:
         """
@@ -64,7 +72,7 @@ class ConstraintResolver:
         elif isinstance(const, CDef):
             self.__remember_types__(const.constraint)
 
-    def __rename_answer__(self, t : TType):
+    def __rename__(self, t: TType):
         if isinstance(t, TVar):
             if t in self.variable_map:
                 return self.variable_map[t]
@@ -72,30 +80,48 @@ class ConstraintResolver:
                 return t
         elif isinstance(t, TImpl):
             return TImpl(
-                self.__rename_answer__(t.left),
-                self.__rename_answer__(t.right)
+                self.__rename__(t.left),
+                self.__rename__(t.right)
             )
         elif isinstance(t, TUni):
             return TUni(
                 t.var,
-                self.__rename_answer__(t.expression)
+                self.__rename__(t.expression)
             )
         else:
             assert False
 
     @staticmethod
-    def __generalization__(t: TType, defined: list, phi: dict) -> TType:
+    def __get_vars__(t: TType) -> set:
+        if isinstance(t, TVar):
+            return {t}
+        elif isinstance(t, TImpl):
+            s1 = ConstraintResolver.__get_vars__(t.left)
+            s2 = ConstraintResolver.__get_vars__(t.right)
+            return s1.union(s2)
+        elif isinstance(t, TUni):
+            s1 = ConstraintResolver.__get_vars__(t.expression)
+            s1.discard(t.var)
+            return s1
+        elif isinstance(t, TSigma):
+            s1 = ConstraintResolver.__get_vars__(t.type)
+            for var in t.vars:
+                s1.discard(var)
+        else:
+            assert False
+
+    @staticmethod
+    def __generalization__(t: TType, defined: list) -> TType:
         """
-        Generate CSigma with variables that in phi but not in defined
+        Generate CSigma with variables that free in t but not in defined
         """
         # TODO: test this
-        vars = set(defined)
         result = []
-        for var in phi.keys():
-            if isinstance(phi, Var) and (var not in vars):
-                result += var
+        for var in ConstraintResolver.__get_vars__(t):
+            if isinstance(var, TVar) and (var not in defined):
+                result.append(var)
 
-        return TSigma(list(vars), None, t)
+        return TSigma(list(result), None, t)
 
     def __substitution__(self, x: TVar, subst: TType, c: Constraint) -> Constraint:
         """
@@ -127,13 +153,14 @@ class ConstraintResolver:
         for var in c.vars:
             exp = subst(exp, var, self.get_new_type())
 
+        if c.subst is not None:
+            self.inst.append(Equation(c.subst, exp))
+
         return exp
 
     def __resolve__(self, const: Constraint, defined: list) -> dict:
         """
-
-        :param const:
-        :return:
+        Resolve given constraint.
         """
         if isinstance(const, CExistence):
             # Just skip existence quantifier
@@ -147,7 +174,7 @@ class ConstraintResolver:
             if isinstance(const.left, TSigma) and (const.left.constraint is None):
                 return {const.right: self.__inst__(const.left)}
             elif isinstance(const.left, TVar):
-                return {const.right: const.left}
+                return {const.left: const.right}
 
         elif isinstance(const, CAnd):
             phi1 = self.__resolve__(const.left, defined)
@@ -161,6 +188,9 @@ class ConstraintResolver:
                 eq.append(Equation(key, phi2[key]))
 
             temp = solve_set_of_equations(eq)
+            for equation in temp:
+                if isinstance(equation.left, TVar) and isinstance(equation.right, TVar):
+                    self.inst.append(equation)
             result = {}
             # all equation#left is different because system is right form
             for equation in temp:
@@ -183,9 +213,11 @@ class ConstraintResolver:
                 else:
                     assert False
 
-                temp = self.__generalization__(temp, defined, phi)
+                temp = self.__generalization__(temp, defined)  # ,phi)
+                if isinstance(temp, TSigma):
+                    temp.subst = const.var
 
-            new_def = defined
+            new_def = copy(defined)
             new_def.append(temp)
             new_const = self.__substitution__(const.var, temp, const.constraint)
             return self.__resolve__(new_const, new_def)
@@ -197,7 +229,12 @@ class ConstraintResolver:
         self.variable_map = {}
         self.__remember_types__(const)
         phi = self.__resolve__(const, [])
-        return self.__rename_answer__(phi[exp_type])
+
+        answer = self.__rename__(phi[exp_type])
+
+        eq = []
+
+        return answer
 
 
 def run_test(exp: Expression):

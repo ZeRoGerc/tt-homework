@@ -57,6 +57,7 @@ class WAlgorithm:
     def __init__(self):
         self.last_number = 0
         self.defined_variables = {}
+        self.inst = []
 
     def get_new_type(self) -> TVar:
         """
@@ -139,6 +140,8 @@ class WAlgorithm:
                 cur_type, vars = __remove_quantifiers__(gamma[TVar(exp.name)])
                 for variable in vars:
                     cur_type = subst(cur_type, variable, self.get_new_type())
+                if len(vars) > 0:
+                    self.inst.append(Equation(TVar(exp.name), cur_type))
                 return {}, cur_type
 
             new_type = self.get_new_type()
@@ -191,7 +194,7 @@ class WAlgorithm:
             s2, t2 = self.__infer_type__(new_gamma, exp.expression)
 
             s = WAlgorithm.__merge_substitutions__(s2, s1)
-            s[TVar(exp.variable.name)] = x_type
+            # s[TVar(exp.variable.name)] = x_type
             return s, t2
 
     def infer_type(self, exp: Expression) -> (dict, TType):
@@ -204,6 +207,7 @@ class WAlgorithm:
         """
         self.last_number = 0
         self.defined_variables = {}
+        self.inst = []
         context, result = self.__infer_type__({}, exp)
         for sub in self.defined_variables.keys():
             context[sub] = self.defined_variables[sub]

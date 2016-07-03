@@ -30,8 +30,8 @@ def solve(input_file, output_file):
 
 
 def main(argv):
-    input_file = 'test3.in'
-    output_file = 'test3.out'
+    input_file = 'task3.in'
+    output_file = 'task3.out'
 
     try:
         opts, args = getopt.getopt(argv, "hi:o:", ["input_file=", "output_file="])

@@ -11,7 +11,7 @@ class Equation:
         return str(self.left) + "=" + str(self.right)
 
     def __hash__(self):
-        return hash(self.left) ^ hash(self.right) ^ hash(self.__dict__)
+        return hash(self.left) ^ hash(self.right)
 
     def __eq__(self, other):
         return (isinstance(other, self.__class__)
