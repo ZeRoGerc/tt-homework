@@ -230,9 +230,15 @@ class ConstraintResolver:
         self.__remember_types__(const)
         phi = self.__resolve__(const, [])
 
-        answer = self.__rename__(phi[exp_type])
+        answer = None
+        if exp_type in phi:
+            answer = phi[exp_type]
+        else:
+            for key in phi.keys():
+                if exp_type == phi[key]:
+                    answer = key
 
-        eq = []
+        answer = self.__rename__(answer)
 
         return answer
 
